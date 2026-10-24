@@ -21,3 +21,5 @@ Thumbs.db
 # Generated test files 
 (recreate with tests\make_upload_samples.py)
 tests/upload_samples/
+# Files uploaded through the web page (one folder per session)
+data/uploads/
