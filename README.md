@@ -2,7 +2,8 @@
 
 A local web app that answers questions using the PDF files you upload (admission
 policies, exam rules, handbooks, notices). It finds the most relevant passages and
-asks an AI model to answer from them only. Every answer names the file and page.
+asks an AI model to answer from them. Answers are expected to cite the file and page;
+check the displayed passages because the model can make mistakes.
 
 Built step by step with Python, PyMuPDF, Sentence Transformers, FAISS, the Google
 Gemini API and Streamlit.
@@ -10,18 +11,23 @@ Gemini API and Streamlit.
 ## What it does
 
 - Searches only the PDFs you upload in your own browser session.
-- Answers use only those documents and cite the file name and page.
+- The model is instructed to answer from those documents and cite the file name and page.
 - Cited files and pages are checked against the passages actually sent to the AI.
-- Says "the documents do not provide enough information" instead of guessing.
+- If no relevant passages are found, says "the documents do not provide enough
+  information" without sending the question to the AI.
 - Shows the supporting passages in expandable sections.
-- Handles empty, corrupted, password-protected and scanned PDFs without crashing.
+- Rejects empty uploads and reports unreadable or password-protected PDFs instead
+  of indexing them.
+- PDFs with no extractable text are skipped; this can include scanned PDFs. There
+  is no OCR support.
 - Treats document text as untrusted, which reduces the risk of hidden instructions
   inside a PDF being followed.
 
 ## How it works
 
-1. PyMuPDF reads each PDF page by page (`src/pdf_processor.py`).
-2. Pages are split into overlapping chunks of about 800 characters (`src/text_chunker.py`).
+1. PyMuPDF extracts text page by page (`src/pdf_processor.py`).
+2. Extracted page text is split into overlapping chunks of about 800 characters
+   (`src/text_chunker.py`).
 3. Sentence Transformers (`all-MiniLM-L6-v2`) turns each chunk into 384 numbers (`src/embeddings.py`).
 4. FAISS stores the vectors and finds the closest ones (`src/vector_store.py`, `src/retriever.py`).
 5. The question and the top passages go to Gemini (`src/llm_client.py`).
@@ -139,35 +145,37 @@ requirements-lock.txt   full snapshot of the working Windows environment
 Remove-Item -Recurse -Force data\uploads, storage\uploads
 ```
 
-- Each question sends the question text and the top retrieved passages to Google's
-  Gemini service.
-- On Gemini's free tier, Google's terms allow it to use submitted content to improve
-  its products, and human reviewers may read it. Use only public documents on the free
-  tier. Activating Google Cloud Billing moves usage to the paid data terms (check
-  Google's current terms and your region).
+- When relevant passages are found, the question and those passages are sent to
+  Google's Gemini service. Questions with no relevant passages are answered without
+  a Gemini request.
+- Google's data-use terms depend on billing status and can change. Check the current
+  Gemini API terms before sending documents, and do not submit sensitive content
+  unless you have confirmed the applicable data protections.
 - The app has no login. Anyone who can open the page can use your API quota, so keep
   it on localhost.
 
 ## Limitations
 
-- Scanned PDFs have no text and are skipped. There is no OCR.
+- PDFs with no extractable text are skipped. Scanned PDFs without an existing text
+  layer need OCR, which is not supported.
 - The embedding model is English-focused. Urdu needs a multilingual model.
-- Tables, columns and images are flattened to plain text.
+- Extracted text does not preserve page layout: tables and columns may be jumbled,
+  and images are not interpreted.
 - Page numbers are PDF page positions and can differ from numbers printed on pages.
-- The similarity cut-off (0.25) was set on small samples. Tune it on real documents.
-  Scores are not probabilities.
+- The starting similarity cut-off is 0.25. Tune it using your own documents; scores
+  are not probabilities.
 - The AI can still be wrong. Citations are checked for file and page only, not for
   whether the sentence truly supports the claim. Read the passages.
-- The free tier has rate limits and can be busy. The app retries, then shows a message.
+- Gemini has rate limits and can be busy. The app retries, then shows a message.
 - Built for one local user. No accounts or per-document permissions.
 
 ## Deployment note
 
-Do not put this on the public internet as it is. There is no login, the free Gemini
-tier may use submitted content, and PyMuPDF is under the AGPL licence (a commercial
-licence is available from Artifex), so check the terms before offering the app to
-others. `requirements-lock.txt` is a Windows snapshot and probably will not install
-on Linux as it is.
+Do not put this on the public internet as it is. There is no login, Google's data-use
+terms depend on the account and billing status, and PyMuPDF is under the AGPL licence
+(a commercial licence is available from Artifex). Check the applicable terms before
+offering the app to others. `requirements-lock.txt` is a Windows environment snapshot;
+Linux compatibility is not guaranteed.
 
 ## Possible future work
 
