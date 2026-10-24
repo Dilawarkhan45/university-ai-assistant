@@ -1,0 +1,7 @@
+[server]
+fileWatcherType = "none"
+address = "localhost"
+maxUploadSize = 25
+
+[browser]
+gatherUsageStats = false

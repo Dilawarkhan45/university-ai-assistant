@@ -1,0 +1,23 @@
+# Virtual environment
+venv/
+
+# Secrets - never commit
+.env
+
+# Python cache and test cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Generated files and uploaded documents (keep the folders, ignore contents)
+storage/*
+!storage/.gitkeep
+data/pdfs/*
+!data/pdfs/.gitkeep
+
+# Editor and OS files
+.vscode/
+Thumbs.db
+# Generated test files 
+(recreate with tests\make_upload_samples.py)
+tests/upload_samples/
